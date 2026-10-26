@@ -1,0 +1,11 @@
+fastmcp<4,>=2
+fastapi<1,>=0.115
+langchain<2,>=1
+langchain-mcp-adapters<1,>=0.2
+langchain-ollama<2,>=1
+strands-agents[ollama]<2,>=1
+streamlit<2,>=1.40
+uvicorn<1,>=0.35
+
+[dev]
+pytest<9,>=8

@@ -1,0 +1,25 @@
+[project]
+name = "langchain-math-mcp-example"
+version = "0.1.0"
+description = "A minimal FastMCP math server connected to a LangChain agent"
+requires-python = ">=3.10"
+dependencies = [
+    "fastmcp>=2,<4",
+    "fastapi>=0.115,<1",
+    "langchain>=1,<2",
+    "langchain-mcp-adapters>=0.2,<1",
+    "langchain-ollama>=1,<2",
+    "strands-agents[ollama]>=1,<2",
+    "streamlit>=1.40,<2",
+    "uvicorn>=0.35,<1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<9"]
+
+[tool.setuptools]
+py-modules = ["agent", "agent_api", "agent_logging", "agents_strands", "math_operations", "math_server", "mcp_config", "plot_agent_timeline", "streamlit_app"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

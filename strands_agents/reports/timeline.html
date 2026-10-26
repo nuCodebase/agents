@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent request timeline — 2026-10-18 15:10:16.263</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 24px; font-family: system-ui, sans-serif; background: Canvas; color: CanvasText; }
+  svg { width: 100%; min-width: 720px; height: auto; }
+  .heading { font-size: 20px; font-weight: 600; fill: CanvasText; }
+  .subtitle, .tick, .axis-title { font-size: 12px; fill: GrayText; }
+  .lane { font-size: 12px; fill: CanvasText; }
+  .grid { stroke: color-mix(in srgb, CanvasText 18%, transparent); stroke-width: 1; }
+  .bar-label { font-size: 11px; fill: white; pointer-events: none; }
+  .span:hover rect { stroke: CanvasText; stroke-width: 2; }
+  .scroller { overflow-x: auto; }
+</style>
+</head>
+<body><div class="scroller"><svg viewBox="0 0 1200 519" role="img" aria-label="Agent request timeline — 2026-10-18 15:10:16.263">
+<title>Agent request timeline — 2026-10-18 15:10:16.263</title>
+<text class="heading" x="0" y="24">Agent request timeline — 2026-10-18 15:10:16.263</text>
+<text class="subtitle" x="0" y="47">Total wall time: 167.794 seconds</text>
+<line class="grid" x1="260.00" x2="260.00" y1="70" y2="454"/>
+<text class="tick" x="260.00" y="497" text-anchor="middle">0.0s</text>
+<line class="grid" x1="373.75" x2="373.75" y1="70" y2="454"/>
+<text class="tick" x="373.75" y="497" text-anchor="middle">21.0s</text>
+<line class="grid" x1="487.50" x2="487.50" y1="70" y2="454"/>
+<text class="tick" x="487.50" y="497" text-anchor="middle">41.9s</text>
+<line class="grid" x1="601.25" x2="601.25" y1="70" y2="454"/>
+<text class="tick" x="601.25" y="497" text-anchor="middle">62.9s</text>
+<line class="grid" x1="715.00" x2="715.00" y1="70" y2="454"/>
+<text class="tick" x="715.00" y="497" text-anchor="middle">83.9s</text>
+<line class="grid" x1="828.75" x2="828.75" y1="70" y2="454"/>
+<text class="tick" x="828.75" y="497" text-anchor="middle">104.9s</text>
+<line class="grid" x1="942.50" x2="942.50" y1="70" y2="454"/>
+<text class="tick" x="942.50" y="497" text-anchor="middle">125.8s</text>
+<line class="grid" x1="1056.25" x2="1056.25" y1="70" y2="454"/>
+<text class="tick" x="1056.25" y="497" text-anchor="middle">146.8s</text>
+<line class="grid" x1="1170.00" x2="1170.00" y1="70" y2="454"/>
+<text class="tick" x="1170.00" y="497" text-anchor="middle">167.8s</text>
+<text class="lane" x="248" y="99" text-anchor="end">operations-supervisor / model</text>
+<text class="lane" x="248" y="147" text-anchor="end">geometry-operations-agent / model</text>
+<text class="lane" x="248" y="195" text-anchor="end">geometry-operations-agent / tool:add_3d_points</text>
+<text class="lane" x="248" y="243" text-anchor="end">math-operations-agent / model</text>
+<text class="lane" x="248" y="291" text-anchor="end">math-operations-agent / tool:add</text>
+<text class="lane" x="248" y="339" text-anchor="end">math-operations-agent / tool:multiply</text>
+<text class="lane" x="248" y="387" text-anchor="end">operations-supervisor / tool:geometry_operations_agent</text>
+<text class="lane" x="248" y="435" text-anchor="end">operations-supervisor / tool:math_operations_agent</text>
+<g class="span"><title>model → tool_use | 0.001s–34.891s | duration 34.890s</title><rect x="260.01" y="80" width="189.22" height="28" rx="3" fill="#4f7cff"/>
+<text class="bar-label" x="267.01" y="99">model → tool_use</text>
+</g>
+<g class="span"><title>model → tool_use | 34.926s–46.066s | duration 11.140s</title><rect x="449.41" y="128" width="60.42" height="28" rx="3" fill="#4f7cff"/>
+</g>
+<g class="span"><title>add_3d_points | 46.067s–46.068s | duration 0.001s</title><rect x="509.84" y="176" width="4.00" height="28" rx="3" fill="#26a269"/>
+</g>
+<g class="span"><title>model → tool_use | 34.901s–64.607s | duration 29.706s</title><rect x="449.28" y="224" width="161.11" height="28" rx="3" fill="#4f7cff"/>
+<text class="bar-label" x="456.28" y="243">model → tool_use</text>
+</g>
+<g class="span"><title>add | 64.610s–64.708s | duration 0.098s</title><rect x="610.40" y="272" width="4.00" height="28" rx="3" fill="#26a269"/>
+</g>
+<g class="span"><title>multiply | 64.670s–64.708s | duration 0.038s</title><rect x="610.72" y="320" width="4.00" height="28" rx="3" fill="#26a269"/>
+</g>
+<g class="span"><title>model → end_turn | 46.069s–68.954s | duration 22.885s</title><rect x="509.85" y="128" width="124.11" height="28" rx="3" fill="#4f7cff"/>
+<text class="bar-label" x="516.85" y="147">model → end_turn</text>
+</g>
+<g class="span"><title>geometry_operations_agent | 34.899s–68.958s | duration 34.059s</title><rect x="449.27" y="368" width="184.72" height="28" rx="3" fill="#26a269"/>
+<text class="bar-label" x="456.27" y="387">geometry_operations_agent</text>
+</g>
+<g class="span"><title>model → end_turn | 64.710s–143.166s | duration 78.456s</title><rect x="610.94" y="224" width="425.49" height="28" rx="3" fill="#4f7cff"/>
+<text class="bar-label" x="617.94" y="243">model → end_turn</text>
+</g>
+<g class="span"><title>math_operations_agent | 34.894s–143.168s | duration 108.274s</title><rect x="449.24" y="416" width="587.20" height="28" rx="3" fill="#26a269"/>
+<text class="bar-label" x="456.24" y="435">math_operations_agent</text>
+</g>
+<g class="span"><title>model → end_turn | 143.170s–167.793s | duration 24.623s</title><rect x="1036.45" y="80" width="133.54" height="28" rx="3" fill="#4f7cff"/>
+<text class="bar-label" x="1043.45" y="99">model → end_turn</text>
+</g>
+<text class="axis-title" x="715.00" y="517" text-anchor="middle">Elapsed time from request receipt</text>
+</svg></div></body>
+</html>
