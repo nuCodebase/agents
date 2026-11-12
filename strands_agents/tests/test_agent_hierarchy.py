@@ -23,7 +23,9 @@ def test_supervisor_exposes_workers_not_operation_tools() -> None:
     geometry_path = Path(__file__).parents[1] / "tools" / "geometry.py"
     geometry_tools = load_tools_from_file_path(str(geometry_path))
 
-    supervisor = create_supervisor_agent(model, [fake_math_tool], geometry_tools)
+    supervisor = create_supervisor_agent(
+        model, model, [fake_math_tool], geometry_tools
+    )
 
     assert set(supervisor.tool_names) == {
         "math_operations_agent",
@@ -43,6 +45,10 @@ def test_supervisor_exposes_workers_not_operation_tools() -> None:
 def test_prompts_require_safe_parallel_batches() -> None:
     assert "ONE math_operations_agent call" in SUPERVISOR_PROMPT
     assert "ONE geometry_operations_agent call" in SUPERVISOR_PROMPT
+    assert "PRESERVE USER INPUT EXACTLY" in SUPERVISOR_PROMPT
+    assert "exact character-for-character copy" in SUPERVISOR_PROMPT
+    assert "Never add operators, operands" in SUPERVISOR_PROMPT
+    assert "compare its input against the original request" in SUPERVISOR_PROMPT
     assert "same model turn" in MATH_AGENT_PROMPT
     assert "same model turn" in GEOMETRY_AGENT_PROMPT
     assert "exactly once" in MATH_AGENT_PROMPT

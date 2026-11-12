@@ -1,6 +1,6 @@
 import pytest
 
-import math_operations
+from mcp_servers import math_operations
 
 
 def test_operations() -> None:

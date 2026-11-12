@@ -1,6 +1,7 @@
 """Run a hierarchical Strands agent using Ollama and specialized workers."""
 
 import argparse
+import os
 from pathlib import Path
 from typing import Any
 
@@ -11,14 +12,14 @@ from strands.tools.loader import load_tools_from_file_path
 from strands.tools.mcp import MCPClient
 
 from agent_logging import attach_tool_logging, configure_logging
-from mcp_config import load_mcp_config
+from mcp_servers.mcp_config import load_mcp_config
 
-OLLAMA_HOST = "http://127.0.0.1:11434"
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434").rstrip("/")
 GEOMETRY_TOOLS_PATH = Path(__file__).with_name("tools") / "geometry.py"
 
 MATH_AGENT_PROMPT = (
     "You are the math operations specialist. Solve only arithmetic tasks. A "
-    "request may contain several operations. Always use the provided MCP math "
+    "request contians only one operation. Always use the provided MCP math "
     "tools instead of calculating mentally. When operations are independent, "
     "call all required tools together in the same model turn so they execute "
     "concurrently. Run operations sequentially only when one result is an input "
@@ -31,7 +32,7 @@ MATH_AGENT_PROMPT = (
 )
 GEOMETRY_AGENT_PROMPT = (
     "You are the 3D operations specialist. Solve only three-dimensional point "
-    "tasks. A request may contain several operations. Always use the provided "
+    "tasks. A request contains only one operation. Always use the provided "
     "geometry tools instead of calculating mentally. When operations are "
     "independent, call all required tools together in the same model turn so "
     "they execute concurrently. Run operations sequentially only when one "
@@ -45,7 +46,16 @@ GEOMETRY_AGENT_PROMPT = (
 SUPERVISOR_PROMPT = (
     "You are the high-level supervisor. Identify the tasks in each request and "
     "delegate arithmetic work to math_operations_agent and 3D point work to "
-    "geometry_operations_agent. You have no operation tools of your own. Bundle "
+    "geometry_operations_agent. PRESERVE USER INPUT EXACTLY when delegating. "
+    "For a request handled by one worker, the worker tool's input string MUST "
+    "be an exact character-for-character copy of the user's request. Never "
+    "normalize, simplify, expand, correct, paraphrase, or append anything to "
+    "that input. Never add operators, operands, punctuation, delimiters, `/ 1`, "
+    "or explanatory text. For a mixed request requiring both workers, copy only "
+    "the relevant original text span into each worker input, without changing "
+    "any character within that span. Before calling a worker, compare its input "
+    "against the original request and remove any content that was not present "
+    "in the original. You have no operation tools of your own. Bundle "
     "all independent arithmetic tasks into ONE math_operations_agent call, and "
     "bundle all independent 3D tasks into ONE geometry_operations_agent call. "
     "Never call the same worker more than once concurrently because a worker "
@@ -61,7 +71,7 @@ def ensure_ollama_ready(model_id: str) -> None:
     """Verify that Ollama is reachable and has the requested model.
 
     Args:
-        model_id: Ollama model tag, such as ``qwen3:4b``.
+        model_id: Ollama model tag, such as ``qwen3:0.6b``.
 
     Raises:
         SystemExit: If Ollama is unreachable or the model has not been pulled.
@@ -85,7 +95,7 @@ def ensure_ollama_ready(model_id: str) -> None:
 
 
 def create_math_client() -> MCPClient:
-    """Create the Strands MCP client described by ``mcp.json``.
+    """Create the Strands client for the networked math MCP service.
 
     Returns:
         The configured math-server client. The caller must start/stop it or use
@@ -96,7 +106,8 @@ def create_math_client() -> MCPClient:
 
 
 def create_supervisor_agent(
-    model: Any,
+    supervisor_model: Any,
+    worker_model: Any,
     math_tools: list[Any],
     geometry_tools: list[Any],
     *,
@@ -110,7 +121,7 @@ def create_supervisor_agent(
     math_agent = Agent(
         name="math-operations-agent",
         description="Handles arithmetic using the math_operations MCP tools.",
-        model=model,
+        model=worker_model,
         tools=math_tools,
         system_prompt=MATH_AGENT_PROMPT,
         callback_handler=None,
@@ -118,7 +129,7 @@ def create_supervisor_agent(
     geometry_agent = Agent(
         name="geometry-operations-agent",
         description="Handles addition and subtraction of three-dimensional points.",
-        model=model,
+        model=worker_model,
         tools=geometry_tools,
         system_prompt=GEOMETRY_AGENT_PROMPT,
         callback_handler=None,
@@ -126,7 +137,7 @@ def create_supervisor_agent(
     supervisor = Agent(
         name="operations-supervisor",
         description="Routes requests to specialized math and 3D operation agents.",
-        model=model,
+        model=supervisor_model,
         tools=[
             math_agent.as_tool(
                 name="math_operations_agent",
@@ -158,7 +169,7 @@ def create_supervisor_agent(
 def main() -> None:
     """Run one CLI prompt through a locally hosted Strands agent.
 
-    The function verifies Ollama, opens the MCP subprocess, combines its math
+    The function verifies Ollama, connects to the math MCP service, combines its math
     tools with tools auto-discovered from ``tools/``, attaches lifecycle
     logging, invokes the agent, and closes MCP during context-manager cleanup.
     """
@@ -171,16 +182,27 @@ def main() -> None:
         help="Question to ask the Strands agent",
     )
     parser.add_argument(
-        "--model",
-        default="qwen3:4b",
-        help="Local Ollama model (default: qwen3:4b)",
+        "--supervisor-model",
+        default="qwen3:1.7b",
+        help="Ollama model used by the supervisor (default: qwen3:1.7b)",
+    )
+    parser.add_argument(
+        "--worker-model",
+        default="qwen3:0.6b",
+        help="Ollama model shared by math and geometry workers (default: qwen3:0.6b)",
     )
     args = parser.parse_args()
 
-    ensure_ollama_ready(args.model)
-    model = OllamaModel(
+    ensure_ollama_ready(args.supervisor_model)
+    ensure_ollama_ready(args.worker_model)
+    supervisor_model = OllamaModel(
         host=OLLAMA_HOST,
-        model_id=args.model,
+        model_id=args.supervisor_model,
+        temperature=0,
+    )
+    worker_model = OllamaModel(
+        host=OLLAMA_HOST,
+        model_id=args.worker_model,
         temperature=0,
     )
 
@@ -189,7 +211,7 @@ def main() -> None:
         math_tools = math_client.list_tools_sync()
         geometry_tools = load_tools_from_file_path(str(GEOMETRY_TOOLS_PATH))
         supervisor = create_supervisor_agent(
-            model, math_tools, geometry_tools
+            supervisor_model, worker_model, math_tools, geometry_tools
         )
         print(f"Detailed logs: {log_path}")
         supervisor(" ".join(args.prompt))

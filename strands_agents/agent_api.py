@@ -1,16 +1,19 @@
 """Multi-user HTTP API for the Strands math and geometry agent."""
 
 import asyncio
+import json
 import os
+import threading
 import time
 import uuid
-from collections.abc import Callable
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import FastAPI, Header, HTTPException, Request, status
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from strands import Agent
 from strands.models.ollama import OllamaModel
@@ -24,14 +27,16 @@ from agents_strands import (
     ensure_ollama_ready,
 )
 
-DEFAULT_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:4b")
+DEFAULT_SUPERVISOR_MODEL = os.getenv("SUPERVISOR_MODEL", "qwen3:1.7b")
+DEFAULT_WORKER_MODEL = os.getenv("WORKER_MODEL", "qwen3:0.6b")
 MAX_CONVERSATIONS = int(os.getenv("MAX_CONVERSATIONS", "1000"))
 GEOMETRY_TOOLS_PATH = Path(__file__).with_name("tools") / "geometry.py"
 
 
 class ConversationCreate(BaseModel):
     """Request body used to select the model for a new conversation."""
-    model: str = Field(default=DEFAULT_MODEL, min_length=1)
+    supervisor_model: str = Field(default=DEFAULT_SUPERVISOR_MODEL, min_length=1)
+    worker_model: str = Field(default=DEFAULT_WORKER_MODEL, min_length=1)
 
 
 class ChatRequest(BaseModel):
@@ -51,7 +56,8 @@ class ConversationResponse(BaseModel):
     """Identifiers and model information returned after conversation creation."""
     conversation_id: str
     user_id: str
-    model: str
+    supervisor_model: str
+    worker_model: str
 
 
 @dataclass
@@ -62,7 +68,8 @@ class Conversation:
     conversations have distinct locks and can therefore run concurrently.
     """
     user_id: str
-    model_id: str
+    supervisor_model_id: str
+    worker_model_id: str
     agent: Agent
     messages: list[dict[str, str]] = field(default_factory=list)
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
@@ -79,7 +86,7 @@ class ConversationStore:
 
     def __init__(
         self,
-        agent_factory: Callable[[str], Agent],
+        agent_factory: Callable[[str, str], Agent],
         max_conversations: int = MAX_CONVERSATIONS,
     ) -> None:
         """Initialize an empty conversation registry.
@@ -93,12 +100,15 @@ class ConversationStore:
         self._items: dict[str, Conversation] = {}
         self._lock = asyncio.Lock()
 
-    async def create(self, user_id: str, model_id: str) -> tuple[str, Conversation]:
+    async def create(
+        self, user_id: str, supervisor_model_id: str, worker_model_id: str
+    ) -> tuple[str, Conversation]:
         """Create an isolated conversation, evicting the oldest at capacity.
 
         Args:
             user_id: Ownership identifier supplied by the authenticated layer.
-            model_id: Ollama model used by the new agent.
+            supervisor_model_id: Ollama model used by the supervisor.
+            worker_model_id: Ollama model shared by the worker agents.
 
         Returns:
             Newly generated conversation UUID and its state object.
@@ -114,8 +124,9 @@ class ConversationStore:
             conversation_id = str(uuid.uuid4())
             conversation = Conversation(
                 user_id=user_id,
-                model_id=model_id,
-                agent=self._agent_factory(model_id),
+                supervisor_model_id=supervisor_model_id,
+                worker_model_id=worker_model_id,
+                agent=self._agent_factory(supervisor_model_id, worker_model_id),
             )
             self._items[conversation_id] = conversation
             return conversation_id, conversation
@@ -157,33 +168,44 @@ class ConversationStore:
 
 
 def create_conversation_agent(
-    model_id: str, math_tools: list[Any], geometry_tools: list[Any]
+    supervisor_model_id: str,
+    worker_model_id: str,
+    math_tools: list[Any],
+    geometry_tools: list[Any],
 ) -> Agent:
     """Build one stateful, fully logged Strands agent for a conversation.
 
     Args:
-        model_id: Installed Ollama model tag.
+        supervisor_model_id: Installed Ollama model used for routing.
+        worker_model_id: Installed Ollama model shared by operation workers.
         math_tools: Shared MCP math tool wrappers.
         geometry_tools: Native Strands 3D tool wrappers.
 
     Returns:
         A new agent with empty, conversation-local message history.
     """
-    model = OllamaModel(
+    supervisor_model = OllamaModel(
         host=OLLAMA_HOST,
-        model_id=model_id,
+        model_id=supervisor_model_id,
         temperature=0,
     )
-    return create_supervisor_agent(model, math_tools, geometry_tools)
+    worker_model = OllamaModel(
+        host=OLLAMA_HOST,
+        model_id=worker_model_id,
+        temperature=0,
+    )
+    return create_supervisor_agent(
+        supervisor_model, worker_model, math_tools, geometry_tools
+    )
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize process-wide resources and release them during shutdown.
 
-    Startup verifies the default Ollama model, starts one MCP stdio connection,
+    Startup verifies the default Ollama model, opens one remote MCP connection,
     loads MCP/native tool definitions, and constructs the conversation store.
-    The MCP process is always stopped in ``finally``, including failed startup.
+    The MCP client is always stopped in ``finally``, including failed startup.
 
     Args:
         app: FastAPI application receiving initialized objects in ``app.state``.
@@ -192,7 +214,8 @@ async def lifespan(app: FastAPI):
         Control to FastAPI while the service is accepting requests.
     """
     configure_logging()
-    ensure_ollama_ready(DEFAULT_MODEL)
+    ensure_ollama_ready(DEFAULT_SUPERVISOR_MODEL)
+    ensure_ollama_ready(DEFAULT_WORKER_MODEL)
 
     mcp_client = create_math_client()
     mcp_client.start()
@@ -209,8 +232,8 @@ async def lifespan(app: FastAPI):
             ),
         }
         app.state.conversations = ConversationStore(
-            lambda model_id: create_conversation_agent(
-                model_id, mcp_tools, geometry_tools
+            lambda supervisor_model_id, worker_model_id: create_conversation_agent(
+                supervisor_model_id, worker_model_id, mcp_tools, geometry_tools
             )
         )
         yield
@@ -239,10 +262,11 @@ def store(request: Request) -> ConversationStore:
 
 @app.get("/health")
 async def health(request: Request) -> dict[str, Any]:
-    """Report readiness, default model, and active conversation count."""
+    """Report readiness, default models, and active conversation count."""
     return {
         "status": "ok",
-        "model": DEFAULT_MODEL,
+        "supervisor_model": DEFAULT_SUPERVISOR_MODEL,
+        "worker_model": DEFAULT_WORKER_MODEL,
         "active_conversations": store(request).count,
     }
 
@@ -276,12 +300,16 @@ async def create_conversation(
     Raises:
         SystemExit: If Ollama or the requested model is unavailable.
     """
-    ensure_ollama_ready(body.model)
-    conversation_id, conversation = await store(request).create(user_id, body.model)
+    ensure_ollama_ready(body.supervisor_model)
+    ensure_ollama_ready(body.worker_model)
+    conversation_id, conversation = await store(request).create(
+        user_id, body.supervisor_model, body.worker_model
+    )
     return ConversationResponse(
         conversation_id=conversation_id,
         user_id=user_id,
-        model=conversation.model_id,
+        supervisor_model=conversation.supervisor_model_id,
+        worker_model=conversation.worker_model_id,
     )
 
 
@@ -326,6 +354,84 @@ async def send_message(
             response=response_text,
             stop_reason=getattr(result, "stop_reason", None),
         )
+
+
+def stream_event(event_type: str, **payload: Any) -> str:
+    """Encode one response event as a newline-delimited JSON record."""
+    return json.dumps({"type": event_type, **payload}, ensure_ascii=False) + "\n"
+
+
+async def stream_agent_response(
+    conversation: Conversation,
+    message: str,
+) -> AsyncIterator[str]:
+    """Stream one agent response while preserving conversation ordering.
+
+    The lock remains held until the agent finishes or the HTTP client
+    disconnects. Closing the HTTP stream closes this async generator and sets
+    the Strands cancellation signal.
+    """
+    cancel_signal = threading.Event()
+    try:
+        async with conversation.lock:
+            yield stream_event("start")
+            result = None
+            async for event in conversation.agent.stream_async(
+                message,
+                cancel_signal=cancel_signal,
+            ):
+                if "result" in event:
+                    result = event["result"]
+                    continue
+
+                text = event.get("data")
+                if isinstance(text, str) and text:
+                    yield stream_event("delta", text=text)
+
+            if result is None:
+                if cancel_signal.is_set():
+                    return
+                raise RuntimeError("Agent stream ended without a final result")
+
+            response_text = str(result).strip()
+            stop_reason = getattr(result, "stop_reason", None)
+            if stop_reason != "cancelled":
+                conversation.messages.extend(
+                    [
+                        {"role": "user", "content": message},
+                        {"role": "assistant", "content": response_text},
+                    ]
+                )
+                conversation.updated_at = time.monotonic()
+                yield stream_event(
+                    "complete",
+                    response=response_text,
+                    stop_reason=stop_reason,
+                )
+    except Exception as error:
+        yield stream_event("error", detail=str(error))
+    finally:
+        cancel_signal.set()
+
+
+@app.post("/v1/conversations/{conversation_id}/messages/stream")
+async def stream_message(
+    conversation_id: str,
+    body: ChatRequest,
+    request: Request,
+    user_id: Annotated[str, Header(alias="X-User-ID", min_length=1, max_length=200)],
+) -> StreamingResponse:
+    """Stream assistant text as newline-delimited JSON events."""
+    try:
+        conversation = await store(request).get(conversation_id, user_id)
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="Conversation not found") from error
+
+    return StreamingResponse(
+        stream_agent_response(conversation, body.message),
+        media_type="application/x-ndjson",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.get("/v1/conversations/{conversation_id}/messages")

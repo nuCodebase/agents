@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import argparse
 import html
+import json
 import re
+from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -18,6 +20,10 @@ LINE_RE = re.compile(
 )
 DURATION_RE = re.compile(r"duration_seconds=(?P<duration>\d+(?:\.\d+)?)")
 TOOL_NAME_RE = re.compile(r"(?:name=|\"name\":\s*\")(?P<name>[a-zA-Z0-9_-]+)")
+USAGE_RE = re.compile(
+    r"EventLoopCycleMetric\(.*?usage=\{'inputTokens': (?P<input>\d+), "
+    r"'outputTokens': (?P<output>\d+), 'totalTokens': (?P<total>\d+)\}\)"
+)
 
 
 @dataclass(frozen=True)
@@ -38,6 +44,24 @@ class Span:
     label: str
     detail: str
     kind: str
+
+
+@dataclass
+class ModelInvocation:
+    """One completed model call and the model-visible request/response."""
+
+    agent: str
+    model: str
+    start: float
+    end: float
+    duration: float
+    projected_input_tokens: int | None
+    input_messages: object
+    output: object
+    stop_reason: str
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    total_tokens: int | None = None
 
 
 def parse_events(log_path: Path) -> list[LogEvent]:
@@ -145,12 +169,142 @@ def build_spans(request: list[LogEvent]) -> tuple[list[Span], float]:
     return spans, total
 
 
+def _json_after(details: str, marker: str) -> object | None:
+    """Decode a JSON value stored after a final lifecycle detail marker."""
+    _, separator, value = details.partition(marker)
+    if not separator:
+        return None
+    try:
+        return json.loads(value)
+    except json.JSONDecodeError:
+        return value
+
+
+def build_model_invocations(request: list[LogEvent]) -> list[ModelInvocation]:
+    """Pair model start/end events and recover per-call messages and token usage."""
+    origin = request[0].timestamp
+    histories: dict[str, list[dict[str, object]]] = defaultdict(list)
+    pending: dict[str, list[dict[str, object]]] = defaultdict(list)
+    invocations: list[ModelInvocation] = []
+
+    for event in request:
+        if event.event == "MESSAGE_ADDED":
+            role_match = re.search(r"role=([^ |]+)", event.details)
+            content = _json_after(event.details, "content=")
+            if role_match and content is not None:
+                histories[event.agent].append(
+                    {"role": role_match.group(1), "content": content}
+                )
+            continue
+
+        if event.event == "MODEL_START":
+            model_match = re.search(r"(?:^| \| )model=([^ |]+)", event.details)
+            projected_match = re.search(
+                r"projected_input_tokens=([^ |]+)", event.details
+            )
+            recorded_messages = _json_after(event.details, "input_messages=")
+            pending[event.agent].append(
+                {
+                    "timestamp": event.timestamp,
+                    "model": model_match.group(1) if model_match else "not recorded",
+                    "projected": (
+                        int(projected_match.group(1))
+                        if projected_match and projected_match.group(1).isdigit()
+                        else None
+                    ),
+                    "messages": (
+                        recorded_messages
+                        if recorded_messages is not None
+                        else list(histories[event.agent])
+                    ),
+                }
+            )
+            continue
+
+        if event.event != "MODEL_END" or not pending[event.agent]:
+            continue
+
+        started = pending[event.agent].pop(0)
+        duration_match = DURATION_RE.search(event.details)
+        duration = (
+            float(duration_match.group("duration")) if duration_match else 0.0
+        )
+        stop_match = re.search(r"stop_reason=([^ |]+)", event.details)
+        invocations.append(
+            ModelInvocation(
+                agent=event.agent,
+                model=str(started["model"]),
+                start=(started["timestamp"] - origin).total_seconds(),
+                end=(event.timestamp - origin).total_seconds(),
+                duration=duration,
+                projected_input_tokens=started["projected"],
+                input_messages=started["messages"],
+                output=_json_after(event.details, "content="),
+                stop_reason=stop_match.group(1) if stop_match else "unknown",
+            )
+        )
+
+    # Strands exposes exact per-cycle token counts on REQUEST_FINISHED. Assign
+    # the final N cycle usages to the N model calls from this request/agent;
+    # this also handles stateful agents whose metrics include earlier cycles.
+    for event in request:
+        if event.event != "REQUEST_FINISHED":
+            continue
+        agent_calls = [call for call in invocations if call.agent == event.agent]
+        usages = list(USAGE_RE.finditer(event.details))
+        for call, usage in zip(agent_calls, usages[-len(agent_calls) :]):
+            call.input_tokens = int(usage.group("input"))
+            call.output_tokens = int(usage.group("output"))
+            call.total_tokens = int(usage.group("total"))
+
+    return sorted(invocations, key=lambda call: call.start)
+
+
+def render_model_invocations(invocations: list[ModelInvocation]) -> str:
+    """Render expandable model-call inputs, outputs, timing, and token counts."""
+    if not invocations:
+        return '<p class="empty">No completed model calls were found.</p>'
+
+    cards: list[str] = []
+    for index, call in enumerate(invocations, start=1):
+        token_text = (
+            f"{call.input_tokens:,} input · {call.output_tokens:,} output · "
+            f"{call.total_tokens:,} total"
+            if call.total_tokens is not None
+            else "token usage not recorded"
+        )
+        projected = (
+            str(call.projected_input_tokens)
+            if call.projected_input_tokens is not None
+            else "not recorded"
+        )
+        input_json = json.dumps(call.input_messages, indent=2, ensure_ascii=False)
+        output_json = json.dumps(call.output, indent=2, ensure_ascii=False)
+        cards.append(
+            '<details class="model-call">'
+            f'<summary><span class="call-number">#{index}</span> '
+            f'<strong>{html.escape(call.agent)}</strong> · '
+            f'{html.escape(call.model)} · {call.duration:.3f}s · '
+            f'{html.escape(token_text)} · {html.escape(call.stop_reason)}</summary>'
+            '<div class="call-meta">'
+            f'Elapsed: {call.start:.3f}s–{call.end:.3f}s · '
+            f'Projected input tokens: {html.escape(projected)}</div>'
+            '<div class="io-grid"><section><h3>Input messages</h3>'
+            f'<pre>{html.escape(input_json)}</pre></section>'
+            '<section><h3>Model output</h3>'
+            f'<pre>{html.escape(output_json)}</pre></section></div>'
+            '</details>'
+        )
+    return '<div class="model-calls">' + "".join(cards) + "</div>"
+
+
 def render_html(
     spans: list[Span],
     total: float,
     title: str,
     session_id: str,
     request_id: str,
+    invocations: list[ModelInvocation] | None = None,
 ) -> str:
     """Render spans as a dependency-free standalone SVG timeline."""
     lanes = list(dict.fromkeys(span.lane for span in spans))
@@ -237,27 +391,44 @@ def render_html(
   .bar-label {{ font-size: 11px; fill: white; pointer-events: none; }}
   .span:hover rect {{ stroke: CanvasText; stroke-width: 2; }}
   .scroller {{ overflow-x: auto; }}
+  h2 {{ margin-top: 32px; }}
+  .model-call {{ border: 1px solid color-mix(in srgb, CanvasText 20%, transparent); border-radius: 7px; margin: 12px 0; padding: 10px 14px; }}
+  .model-call summary {{ cursor: pointer; line-height: 1.5; }}
+  .call-number {{ color: GrayText; }}
+  .call-meta, .empty {{ color: GrayText; margin: 12px 0; }}
+  .io-grid {{ display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }}
+  .io-grid h3 {{ font-size: 14px; }}
+  pre {{ white-space: pre-wrap; overflow-wrap: anywhere; padding: 12px; border-radius: 6px; background: color-mix(in srgb, CanvasText 8%, Canvas); font-size: 12px; }}
+  @media (max-width: 900px) {{ .io-grid {{ grid-template-columns: 1fr; }} }}
 </style>
 </head>
-<body><div class="scroller">{svg}</div></body>
+<body><div class="scroller">{svg}</div>
+<h2>Model invocations</h2>
+{render_model_invocations(invocations or [])}
+</body>
 </html>
 """
 
 
 def render_session_html(
-    plots: list[tuple[list[Span], float, str, str, str]], session_id: str
+    plots: list[
+        tuple[list[Span], float, str, str, str, list[ModelInvocation]]
+    ],
+    session_id: str,
 ) -> str:
     """Render every completed request in one session into one HTML report."""
     sections: list[str] = []
-    for spans, total, title, plot_session_id, request_id in plots:
+    for spans, total, title, plot_session_id, request_id, invocations in plots:
         document = render_html(
-            spans, total, title, plot_session_id, request_id
+            spans, total, title, plot_session_id, request_id, invocations
         )
         svg_start = document.index("<svg ")
         svg_end = document.index("</svg>", svg_start) + len("</svg>")
         sections.append(
             '<section class="request-timeline">'
             f"<div class=\"scroller\">{document[svg_start:svg_end]}</div>"
+            '<h2>Model invocations</h2>'
+            f'{render_model_invocations(invocations)}'
             "</section>"
         )
 
@@ -281,6 +452,14 @@ def render_session_html(
   .bar-label {{ font-size: 11px; fill: white; pointer-events: none; }}
   .span:hover rect {{ stroke: CanvasText; stroke-width: 2; }}
   .scroller {{ overflow-x: auto; }}
+  .model-call {{ border: 1px solid color-mix(in srgb, CanvasText 20%, transparent); border-radius: 7px; margin: 12px 0; padding: 10px 14px; }}
+  .model-call summary {{ cursor: pointer; line-height: 1.5; }}
+  .call-number {{ color: GrayText; }}
+  .call-meta, .empty {{ color: GrayText; margin: 12px 0; }}
+  .io-grid {{ display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }}
+  .io-grid h3 {{ font-size: 14px; }}
+  pre {{ white-space: pre-wrap; overflow-wrap: anywhere; padding: 12px; border-radius: 6px; background: color-mix(in srgb, CanvasText 8%, Canvas); font-size: 12px; }}
+  @media (max-width: 900px) {{ .io-grid {{ grid-template-columns: 1fr; }} }}
 </style>
 </head>
 <body>
@@ -358,9 +537,12 @@ def main() -> None:
             )
         selected_requests = [requests[-1 - args.request_index]]
 
-    plots: list[tuple[list[Span], float, str, str, str]] = []
+    plots: list[
+        tuple[list[Span], float, str, str, str, list[ModelInvocation]]
+    ] = []
     for request in selected_requests:
         spans, total = build_spans(request)
+        invocations = build_model_invocations(request)
         started = request[0].timestamp.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         title = f"Agent request timeline — {started}"
         plots.append(
@@ -370,6 +552,7 @@ def main() -> None:
                 title,
                 request[0].session_id,
                 request[0].request_id,
+                invocations,
             )
         )
 
@@ -380,9 +563,11 @@ def main() -> None:
         document = render_html(*plots[0])
     args.output.write_text(document, encoding="utf-8")
     span_count = sum(len(plot[0]) for plot in plots)
+    invocation_count = sum(len(plot[5]) for plot in plots)
     print(
         f"Wrote {args.output.resolve()} "
-        f"({len(plots)} request(s), {span_count} spans)"
+        f"({len(plots)} request(s), {span_count} spans, "
+        f"{invocation_count} model invocation(s))"
     )
 
 

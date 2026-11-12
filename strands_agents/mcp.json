@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "math": {
-      "transport": "stdio",
-      "command": "${MCP_PYTHON}",
-      "args": ["${MCP_SERVER_PATH}"]
-    }
-  }
-}

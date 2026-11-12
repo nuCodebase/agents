@@ -1,0 +1,72 @@
+services:
+  redis:
+    image: redis:7.4-alpine
+    command:
+      - redis-server
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+      - --maxmemory
+      - 128mb
+      - --maxmemory-policy
+      - allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  math-mcp:
+    build:
+      context: .
+      dockerfile: mcp_servers/Dockerfile
+    ports:
+      - "${MATH_MCP_PORT:-8001}:8000"
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      TOOL_CACHE_TTL_SECONDS: ${TOOL_CACHE_TTL_SECONDS:-3600}
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  agent-api:
+    build:
+      context: .
+      dockerfile: docker/FastAPI.Dockerfile
+    ports:
+      - "${AGENT_API_PORT:-8000}:8000"
+    environment:
+      MATH_MCP_URL: http://math-mcp:8000/mcp
+      OLLAMA_HOST: ${API_OLLAMA_HOST:-http://host.docker.internal:11434}
+      SUPERVISOR_MODEL: ${SUPERVISOR_MODEL:-qwen3:1.7b}
+      WORKER_MODEL: ${WORKER_MODEL:-qwen3:0.6b}
+      MAX_CONVERSATIONS: ${MAX_CONVERSATIONS:-1000}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      math-mcp:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
+    restart: unless-stopped

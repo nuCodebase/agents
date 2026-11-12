@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "math": {
+      "transport": "streamable-http",
+      "url": "${MATH_MCP_URL}"
+    }
+  }
+}

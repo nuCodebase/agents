@@ -1,155 +1,206 @@
-"""Interactive Streamlit chat for the Strands + FastMCP math agent."""
+"""Interactive Streamlit client for the Strands agent FastAPI service."""
 
+import json
+import os
 import uuid
-from pathlib import Path
+from collections.abc import Iterator
 from typing import Any
 
+import httpx
 import streamlit as st
-from strands import Agent
-from strands.models.ollama import OllamaModel
-from strands.tools.loader import load_tools_from_file_path
 
-from agent_logging import LOG_PATH, configure_logging, request_log_context
-from agents_strands import (
-    OLLAMA_HOST,
-    create_math_client,
-    create_supervisor_agent,
-    ensure_ollama_ready,
-)
+from agent_logging import LOG_PATH, configure_logging
 
-DEFAULT_MODEL = "qwen3:4b"
-GEOMETRY_TOOLS_PATH = Path(__file__).with_name("tools") / "geometry.py"
+DEFAULT_SUPERVISOR_MODEL = "qwen3:1.7b"
+DEFAULT_WORKER_MODEL = "qwen3:0.6b"
+DEFAULT_API_URL = "http://127.0.0.1:8000"
+API_URL = os.getenv("AGENT_API_URL", DEFAULT_API_URL).rstrip("/")
+API_TIMEOUT = httpx.Timeout(300.0, connect=5.0)
 
 configure_logging()
 
 
-def close_mcp_client() -> None:
-    """Stop and forget this browser session's MCP subprocess.
+def api_request(method: str, path: str, **kwargs: Any) -> httpx.Response:
+    """Call the agent API and turn transport failures into readable errors."""
+    try:
+        response = httpx.request(
+            method,
+            f"{API_URL}{path}",
+            timeout=API_TIMEOUT,
+            **kwargs,
+        )
+        response.raise_for_status()
+        return response
+    except httpx.HTTPStatusError as error:
+        try:
+            detail = error.response.json().get("detail", error.response.text)
+        except ValueError:
+            detail = error.response.text
+        raise RuntimeError(
+            f"Agent API returned {error.response.status_code}: {detail}"
+        ) from error
+    except httpx.RequestError as error:
+        raise RuntimeError(
+            f"Could not reach the agent API at {API_URL}. "
+            "Start the containers with `docker compose up --build -d`."
+        ) from error
 
-    The operation is safe when the session has not created a client. Strands'
-    ``stop`` method receives empty exception details because this is normal
-    application cleanup rather than exception unwinding.
-    """
-    client = st.session_state.pop("mcp_client", None)
-    if client is not None:
-        client.stop(None, None, None)
+
+def api_headers() -> dict[str, str]:
+    """Return the ownership header for this browser session."""
+    return {"X-User-ID": st.session_state.user_id}
+
+
+def create_conversation(supervisor_model_id: str, worker_model_id: str) -> str:
+    """Create an API-owned conversation and return its identifier."""
+    response = api_request(
+        "POST",
+        "/v1/conversations",
+        headers=api_headers(),
+        json={
+            "supervisor_model": supervisor_model_id,
+            "worker_model": worker_model_id,
+        },
+    )
+    return str(response.json()["conversation_id"])
+
+
+def delete_conversation() -> None:
+    """Delete the current API conversation, if one exists."""
+    conversation_id = st.session_state.get("conversation_id")
+    if conversation_id:
+        api_request(
+            "DELETE",
+            f"/v1/conversations/{conversation_id}",
+            headers=api_headers(),
+        )
 
 
 def reset_conversation() -> None:
-    """Clear the visible transcript and all agent-side conversation state.
-
-    Closing the MCP client first prevents the old subprocess from surviving a
-    model change or explicit **New conversation** action.
-    """
-    close_mcp_client()
-    st.session_state.pop("agent", None)
-    st.session_state.pop("agent_model", None)
+    """Delete API state and clear the locally rendered transcript."""
+    delete_conversation()
+    st.session_state.pop("conversation_id", None)
+    st.session_state.pop("conversation_models", None)
     st.session_state.messages = []
 
 
-def get_agent(model_id: str) -> Agent:
-    """Return the stateful Strands agent for this browser session.
+def stream_message(
+    message: str, supervisor_model_id: str, worker_model_id: str
+) -> Iterator[str]:
+    """Yield assistant text chunks from the FastAPI streaming endpoint."""
+    conversation_id = st.session_state.get("conversation_id")
+    if not conversation_id:
+        conversation_id = create_conversation(supervisor_model_id, worker_model_id)
+        st.session_state.conversation_id = conversation_id
+        st.session_state.conversation_models = (
+            supervisor_model_id,
+            worker_model_id,
+        )
 
-    Args:
-        model_id: Installed Ollama model tag selected in the sidebar.
-
-    Returns:
-        Existing agent when the model is unchanged, otherwise a newly created
-        agent connected to the FastMCP math server and native geometry tools.
-
-    Raises:
-        SystemExit: If Ollama or the selected model is unavailable.
-        Exception: If MCP startup, tool discovery, or agent construction fails.
-    """
-    existing = st.session_state.get("agent")
-    if existing is not None and st.session_state.get("agent_model") == model_id:
-        return existing
-
-    reset_conversation()
-    ensure_ollama_ready(model_id)
-
-    # Keep the client in session state for the entire conversation. Concrete
-    # MCP tool wrappers require its stdio session to remain open.
-    mcp_client = create_math_client()
-    mcp_client.start()
     try:
-        math_tools = mcp_client.list_tools_sync()
-        model = OllamaModel(
-            host=OLLAMA_HOST,
-            model_id=model_id,
-            temperature=0,
-        )
-        geometry_tools = load_tools_from_file_path(str(GEOMETRY_TOOLS_PATH))
-        agent = create_supervisor_agent(
-            model,
-            math_tools,
-            geometry_tools,
-            preserve_worker_context=True,
-        )
-    except Exception:
-        mcp_client.stop(None, None, None)
-        raise
-
-    st.session_state.mcp_client = mcp_client
-    st.session_state.agent = agent
-    st.session_state.agent_model = model_id
-    return agent
+        with httpx.stream(
+            "POST",
+            f"{API_URL}/v1/conversations/{conversation_id}/messages/stream",
+            headers=api_headers(),
+            json={"message": message},
+            timeout=API_TIMEOUT,
+        ) as response:
+            if response.is_error:
+                detail = response.read().decode(errors="replace")
+                raise RuntimeError(
+                    f"Agent API returned {response.status_code}: {detail}"
+                )
+            received_delta = False
+            for line in response.iter_lines():
+                if not line:
+                    continue
+                try:
+                    event = json.loads(line)
+                except ValueError as error:
+                    raise RuntimeError("Agent API returned an invalid stream event") from error
+                if event["type"] == "delta":
+                    received_delta = True
+                    yield str(event["text"])
+                elif event["type"] == "complete" and not received_delta:
+                    yield str(event["response"])
+                elif event["type"] == "error":
+                    raise RuntimeError(f"Agent stream failed: {event['detail']}")
+    except httpx.RequestError as error:
+        raise RuntimeError(
+            f"The response stream from {API_URL} was interrupted."
+        ) from error
 
 
 def render_message(message: dict[str, Any]) -> None:
-    """Render one stored user or assistant message.
-
-    Args:
-        message: Dictionary containing Streamlit-supported ``role`` and Markdown
-        ``content`` values.
-    """
+    """Render one cached user or assistant message."""
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
 
 st.set_page_config(page_title="Math MCP Chat", page_icon="🧮")
 st.title("🧮 Math MCP Chat")
-st.caption("Strands + Ollama + FastMCP")
+st.caption(f"Streamlit → FastAPI ({API_URL}) → Strands + Ollama + FastMCP")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
-if "logging_session_id" not in st.session_state:
-    st.session_state.logging_session_id = str(uuid.uuid4())
+if "user_id" not in st.session_state:
+    st.session_state.user_id = str(uuid.uuid4())
+if "supervisor_model_id" not in st.session_state:
+    st.session_state.supervisor_model_id = DEFAULT_SUPERVISOR_MODEL
+if "worker_model_id" not in st.session_state:
+    st.session_state.worker_model_id = DEFAULT_WORKER_MODEL
 
 with st.sidebar:
     st.header("Settings")
-    model_id = st.text_input("Ollama model", value=DEFAULT_MODEL)
+    supervisor_model_id = st.text_input(
+        "Supervisor model", key="supervisor_model_id"
+    )
+    worker_model_id = st.text_input(
+        "Math and geometry model", key="worker_model_id"
+    )
     if st.button("New conversation", use_container_width=True):
-        reset_conversation()
+        try:
+            reset_conversation()
+        except RuntimeError as error:
+            # Still allow a local reset if the API process is unavailable or
+            # has already lost its in-memory conversation.
+            st.session_state.pop("conversation_id", None)
+            st.session_state.pop("conversation_models", None)
+            st.session_state.messages = []
+            st.warning(str(error))
         st.rerun()
-    st.caption("The Ollama service must be running and the model must be pulled.")
+    st.caption("The Docker services and Ollama must be running.")
     show_logs = st.checkbox("Show recent logs", value=False)
+
+selected_models = (supervisor_model_id, worker_model_id)
+active_models = st.session_state.get("conversation_models")
+if active_models is not None and active_models != selected_models:
+    try:
+        reset_conversation()
+    except RuntimeError as error:
+        st.session_state.pop("conversation_id", None)
+        st.session_state.pop("conversation_models", None)
+        st.session_state.messages = []
+        st.warning(str(error))
 
 for saved_message in st.session_state.messages:
     render_message(saved_message)
 
 if prompt := st.chat_input("Ask a math question"):
-    request_id = str(uuid.uuid4())
     user_message = {"role": "user", "content": prompt}
     st.session_state.messages.append(user_message)
     render_message(user_message)
 
     with st.chat_message("assistant"):
         try:
-            with st.spinner("Working..."):
-                with request_log_context(
-                    st.session_state.logging_session_id,
-                    request_id,
-                ):
-                    response = str(get_agent(model_id)(prompt))
-            st.markdown(response)
+            response = st.write_stream(
+                stream_message(prompt, supervisor_model_id, worker_model_id)
+            )
             st.session_state.messages.append(
                 {"role": "assistant", "content": response}
             )
-        except SystemExit as error:
+        except RuntimeError as error:
             st.error(str(error))
-        except Exception as error:
-            st.error(f"The agent could not answer: {error}")
 
 if show_logs:
     with st.sidebar.expander("Strands and tool-call logs", expanded=True):

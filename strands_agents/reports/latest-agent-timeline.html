@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent request timeline — 2026-11-10 18:59:29.914</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 24px; font-family: system-ui, sans-serif; background: Canvas; color: CanvasText; }
+  svg { width: 100%; min-width: 720px; height: auto; }
+  .heading { font-size: 20px; font-weight: 600; fill: CanvasText; }
+  .subtitle, .tick, .axis-title { font-size: 12px; fill: GrayText; }
+  .lane { font-size: 12px; fill: CanvasText; }
+  .grid { stroke: color-mix(in srgb, CanvasText 18%, transparent); stroke-width: 1; }
+  .bar-label { font-size: 11px; fill: white; pointer-events: none; }
+  .span:hover rect { stroke: CanvasText; stroke-width: 2; }
+  .scroller { overflow-x: auto; }
+  h2 { margin-top: 32px; }
+  .model-call { border: 1px solid color-mix(in srgb, CanvasText 20%, transparent); border-radius: 7px; margin: 12px 0; padding: 10px 14px; }
+  .model-call summary { cursor: pointer; line-height: 1.5; }
+  .call-number { color: GrayText; }
+  .call-meta, .empty { color: GrayText; margin: 12px 0; }
+  .io-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  .io-grid h3 { font-size: 14px; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 12px; border-radius: 6px; background: color-mix(in srgb, CanvasText 8%, Canvas); font-size: 12px; }
+  @media (max-width: 900px) { .io-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body><div class="scroller"><svg viewBox="0 0 1200 327" role="img" aria-label="Agent request timeline — 2026-11-10 18:59:29.914">
+<title>Agent request timeline — 2026-11-10 18:59:29.914</title>
+<text class="heading" x="0" y="24">Agent request timeline — 2026-11-10 18:59:29.914</text>
+<text class="subtitle" x="0" y="47">Session: - · Request: - · Total wall time: 39.227 seconds</text>
+<line class="grid" x1="260.00" x2="260.00" y1="70" y2="262"/>
+<text class="tick" x="260.00" y="305" text-anchor="middle">0.0s</text>
+<line class="grid" x1="373.75" x2="373.75" y1="70" y2="262"/>
+<text class="tick" x="373.75" y="305" text-anchor="middle">4.9s</text>
+<line class="grid" x1="487.50" x2="487.50" y1="70" y2="262"/>
+<text class="tick" x="487.50" y="305" text-anchor="middle">9.8s</text>
+<line class="grid" x1="601.25" x2="601.25" y1="70" y2="262"/>
+<text class="tick" x="601.25" y="305" text-anchor="middle">14.7s</text>
+<line class="grid" x1="715.00" x2="715.00" y1="70" y2="262"/>
+<text class="tick" x="715.00" y="305" text-anchor="middle">19.6s</text>
+<line class="grid" x1="828.75" x2="828.75" y1="70" y2="262"/>
+<text class="tick" x="828.75" y="305" text-anchor="middle">24.5s</text>
+<line class="grid" x1="942.50" x2="942.50" y1="70" y2="262"/>
+<text class="tick" x="942.50" y="305" text-anchor="middle">29.4s</text>
+<line class="grid" x1="1056.25" x2="1056.25" y1="70" y2="262"/>
+<text class="tick" x="1056.25" y="305" text-anchor="middle">34.3s</text>
+<line class="grid" x1="1170.00" x2="1170.00" y1="70" y2="262"/>
+<text class="tick" x="1170.00" y="305" text-anchor="middle">39.2s</text>
+<text class="lane" x="248" y="99" text-anchor="end">operations-supervisor / model</text>
+<text class="lane" x="248" y="147" text-anchor="end">math-operations-agent / model</text>
+<text class="lane" x="248" y="195" text-anchor="end">math-operations-agent / tool:add</text>
+<text class="lane" x="248" y="243" text-anchor="end">operations-supervisor / tool:math_operations_agent</text>
+<g class="span"><title>model → tool_use | 0.002s–5.941s | duration 5.939s</title><rect x="260.05" y="80" width="137.77" height="28" rx="3" fill="#4f7cff"/>
+<text class="bar-label" x="267.05" y="99">model → tool_use</text>
+</g>
+<g class="span"><title>model → tool_use | 5.949s–14.816s | duration 8.867s</title><rect x="398.01" y="128" width="205.69" height="28" rx="3" fill="#4f7cff"/>
+<text class="bar-label" x="405.01" y="147">model → tool_use</text>
+</g>
+<g class="span"><title>add | 14.830s–14.863s | duration 0.033s</title><rect x="604.03" y="176" width="4.00" height="28" rx="3" fill="#26a269"/>
+</g>
+<g class="span"><title>add | 14.820s–14.865s | duration 0.045s</title><rect x="603.81" y="176" width="4.00" height="28" rx="3" fill="#26a269"/>
+</g>
+<g class="span"><title>add | 14.837s–14.866s | duration 0.029s</title><rect x="604.19" y="176" width="4.00" height="28" rx="3" fill="#26a269"/>
+</g>
+<g class="span"><title>model → end_turn | 14.867s–16.744s | duration 1.877s</title><rect x="604.89" y="128" width="43.54" height="28" rx="3" fill="#4f7cff"/>
+</g>
+<g class="span"><title>math_operations_agent | 5.944s–16.746s | duration 10.802s</title><rect x="397.90" y="224" width="250.58" height="28" rx="3" fill="#26a269"/>
+<text class="bar-label" x="404.90" y="243">math_operations_agent</text>
+</g>
+<g class="span"><title>model → tool_use | 16.748s–26.565s | duration 9.817s</title><rect x="648.51" y="80" width="227.75" height="28" rx="3" fill="#4f7cff"/>
+<text class="bar-label" x="655.51" y="99">model → tool_use</text>
+</g>
+<g class="span"><title>model → tool_use | 26.573s–31.466s | duration 4.893s</title><rect x="876.44" y="128" width="113.52" height="28" rx="3" fill="#4f7cff"/>
+<text class="bar-label" x="883.44" y="147">model → tool_use</text>
+</g>
+<g class="span"><title>add | 31.469s–31.504s | duration 0.035s</title><rect x="990.03" y="176" width="4.00" height="28" rx="3" fill="#26a269"/>
+</g>
+<g class="span"><title>model → end_turn | 31.505s–33.481s | duration 1.976s</title><rect x="990.87" y="128" width="45.83" height="28" rx="3" fill="#4f7cff"/>
+</g>
+<g class="span"><title>math_operations_agent | 26.569s–33.483s | duration 6.914s</title><rect x="876.36" y="224" width="160.39" height="28" rx="3" fill="#26a269"/>
+<text class="bar-label" x="883.36" y="243">math_operations_agent</text>
+</g>
+<g class="span"><title>model → end_turn | 33.484s–39.227s | duration 5.743s</title><rect x="1036.77" y="80" width="133.23" height="28" rx="3" fill="#4f7cff"/>
+<text class="bar-label" x="1043.77" y="99">model → end_turn</text>
+</g>
+<text class="axis-title" x="715.00" y="325" text-anchor="middle">Elapsed time from request receipt</text>
+</svg></div>
+<h2>Model invocations</h2>
+<div class="model-calls"><details class="model-call"><summary><span class="call-number">#1</span> <strong>operations-supervisor</strong> · not recorded · 5.939s · 506 input · 225 output · 731 total · tool_use</summary><div class="call-meta">Elapsed: 0.002s–5.941s · Projected input tokens: 657</div><div class="io-grid"><section><h3>Input messages</h3><pre>[
+  {
+    &quot;role&quot;: &quot;user&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;text&quot;: &quot;add 29 and 30&quot;
+      }
+    ]
+  }
+]</pre></section><section><h3>Model output</h3><pre>[
+  {
+    &quot;toolUse&quot;: {
+      &quot;toolUseId&quot;: &quot;tooluse_be8cfd6996e648edbddc8af0&quot;,
+      &quot;name&quot;: &quot;math_operations_agent&quot;,
+      &quot;input&quot;: {
+        &quot;input&quot;: &quot;29 + 30 / 1&quot;
+      }
+    }
+  }
+]</pre></section></div></details><details class="model-call"><summary><span class="call-number">#2</span> <strong>math-operations-agent</strong> · not recorded · 8.867s · 537 input · 997 output · 1,534 total · tool_use</summary><div class="call-meta">Elapsed: 5.949s–14.816s · Projected input tokens: 1354</div><div class="io-grid"><section><h3>Input messages</h3><pre>[
+  {
+    &quot;role&quot;: &quot;user&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;text&quot;: &quot;29 + 30 / 1&quot;
+      }
+    ]
+  }
+]</pre></section><section><h3>Model output</h3><pre>[
+  {
+    &quot;toolUse&quot;: {
+      &quot;toolUseId&quot;: &quot;tooluse_478c3139e2c2496fa4297fb0&quot;,
+      &quot;name&quot;: &quot;add&quot;,
+      &quot;input&quot;: {
+        &quot;a&quot;: 29,
+        &quot;b&quot;: 30
+      }
+    }
+  },
+  {
+    &quot;toolUse&quot;: {
+      &quot;toolUseId&quot;: &quot;tooluse_00d028b4e7664393930f7ef3&quot;,
+      &quot;name&quot;: &quot;add&quot;,
+      &quot;input&quot;: {
+        &quot;b&quot;: 1,
+        &quot;a&quot;: 30
+      }
+    }
+  },
+  {
+    &quot;toolUse&quot;: {
+      &quot;toolUseId&quot;: &quot;tooluse_04e5061ca1e54154b0ccbd17&quot;,
+      &quot;name&quot;: &quot;add&quot;,
+      &quot;input&quot;: {
+        &quot;a&quot;: 1,
+        &quot;b&quot;: 1
+      }
+    }
+  }
+]</pre></section></div></details><details class="model-call"><summary><span class="call-number">#3</span> <strong>math-operations-agent</strong> · not recorded · 1.877s · 580 input · 244 output · 824 total · end_turn</summary><div class="call-meta">Elapsed: 14.867s–16.744s · Projected input tokens: 1537</div><div class="io-grid"><section><h3>Input messages</h3><pre>[
+  {
+    &quot;role&quot;: &quot;user&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;text&quot;: &quot;29 + 30 / 1&quot;
+      }
+    ]
+  },
+  {
+    &quot;role&quot;: &quot;assistant&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;toolUse&quot;: {
+          &quot;toolUseId&quot;: &quot;tooluse_478c3139e2c2496fa4297fb0&quot;,
+          &quot;name&quot;: &quot;add&quot;,
+          &quot;input&quot;: {
+            &quot;a&quot;: 29,
+            &quot;b&quot;: 30
+          }
+        }
+      },
+      {
+        &quot;toolUse&quot;: {
+          &quot;toolUseId&quot;: &quot;tooluse_00d028b4e7664393930f7ef3&quot;,
+          &quot;name&quot;: &quot;add&quot;,
+          &quot;input&quot;: {
+            &quot;b&quot;: 1,
+            &quot;a&quot;: 30
+          }
+        }
+      },
+      {
+        &quot;toolUse&quot;: {
+          &quot;toolUseId&quot;: &quot;tooluse_04e5061ca1e54154b0ccbd17&quot;,
+          &quot;name&quot;: &quot;add&quot;,
+          &quot;input&quot;: {
+            &quot;a&quot;: 1,
+            &quot;b&quot;: 1
+          }
+        }
+      }
+    ]
+  },
+  {
+    &quot;role&quot;: &quot;user&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;toolResult&quot;: {
+          &quot;status&quot;: &quot;success&quot;,
+          &quot;toolUseId&quot;: &quot;tooluse_478c3139e2c2496fa4297fb0&quot;,
+          &quot;content&quot;: [
+            {
+              &quot;text&quot;: &quot;59.0&quot;
+            }
+          ],
+          &quot;structuredContent&quot;: {
+            &quot;result&quot;: 59.0
+          },
+          &quot;metadata&quot;: {
+            &quot;fastmcp&quot;: {
+              &quot;wrap_result&quot;: true
+            }
+          },
+          &quot;isError&quot;: false
+        }
+      },
+      {
+        &quot;toolResult&quot;: {
+          &quot;status&quot;: &quot;success&quot;,
+          &quot;toolUseId&quot;: &quot;tooluse_00d028b4e7664393930f7ef3&quot;,
+          &quot;content&quot;: [
+            {
+              &quot;text&quot;: &quot;31.0&quot;
+            }
+          ],
+          &quot;structuredContent&quot;: {
+            &quot;result&quot;: 31.0
+          },
+          &quot;metadata&quot;: {
+            &quot;fastmcp&quot;: {
+              &quot;wrap_result&quot;: true
+            }
+          },
+          &quot;isError&quot;: false
+        }
+      },
+      {
+        &quot;toolResult&quot;: {
+          &quot;status&quot;: &quot;success&quot;,
+          &quot;toolUseId&quot;: &quot;tooluse_04e5061ca1e54154b0ccbd17&quot;,
+          &quot;content&quot;: [
+            {
+              &quot;text&quot;: &quot;2.0&quot;
+            }
+          ],
+          &quot;structuredContent&quot;: {
+            &quot;result&quot;: 2.0
+          },
+          &quot;metadata&quot;: {
+            &quot;fastmcp&quot;: {
+              &quot;wrap_result&quot;: true
+            }
+          },
+          &quot;isError&quot;: false
+        }
+      }
+    ]
+  }
+]</pre></section><section><h3>Model output</h3><pre>[
+  {
+    &quot;text&quot;: &quot;The results of the operations are:  \n- 29 + 30 = 59.0  \n- 31.0  \n\nFinal answer: 59.0 and 31.0.&quot;
+  }
+]</pre></section></div></details><details class="model-call"><summary><span class="call-number">#4</span> <strong>operations-supervisor</strong> · not recorded · 9.817s · 591 input · 731 output · 1,322 total · tool_use</summary><div class="call-meta">Elapsed: 16.747s–26.565s · Projected input tokens: 755</div><div class="io-grid"><section><h3>Input messages</h3><pre>[
+  {
+    &quot;role&quot;: &quot;user&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;text&quot;: &quot;add 29 and 30&quot;
+      }
+    ]
+  },
+  {
+    &quot;role&quot;: &quot;assistant&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;toolUse&quot;: {
+          &quot;toolUseId&quot;: &quot;tooluse_be8cfd6996e648edbddc8af0&quot;,
+          &quot;name&quot;: &quot;math_operations_agent&quot;,
+          &quot;input&quot;: {
+            &quot;input&quot;: &quot;29 + 30 / 1&quot;
+          }
+        }
+      }
+    ]
+  },
+  {
+    &quot;role&quot;: &quot;user&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;toolResult&quot;: {
+          &quot;toolUseId&quot;: &quot;tooluse_be8cfd6996e648edbddc8af0&quot;,
+          &quot;status&quot;: &quot;success&quot;,
+          &quot;content&quot;: [
+            {
+              &quot;text&quot;: &quot;The results of the operations are:  \n- 29 + 30 = 59.0  \n- 31.0  \n\nFinal answer: 59.0 and 31.0.\n&quot;
+            }
+          ]
+        }
+      }
+    ]
+  }
+]</pre></section><section><h3>Model output</h3><pre>[
+  {
+    &quot;toolUse&quot;: {
+      &quot;toolUseId&quot;: &quot;tooluse_26e5d984944046e2901ef51f&quot;,
+      &quot;name&quot;: &quot;math_operations_agent&quot;,
+      &quot;input&quot;: {
+        &quot;input&quot;: &quot;29 + 30 / 1&quot;
+      }
+    }
+  }
+]</pre></section></div></details><details class="model-call"><summary><span class="call-number">#5</span> <strong>math-operations-agent</strong> · not recorded · 4.893s · 537 input · 629 output · 1,166 total · tool_use</summary><div class="call-meta">Elapsed: 26.573s–31.466s · Projected input tokens: 1354</div><div class="io-grid"><section><h3>Input messages</h3><pre>[
+  {
+    &quot;role&quot;: &quot;user&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;text&quot;: &quot;29 + 30 / 1&quot;
+      }
+    ]
+  },
+  {
+    &quot;role&quot;: &quot;assistant&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;toolUse&quot;: {
+          &quot;toolUseId&quot;: &quot;tooluse_478c3139e2c2496fa4297fb0&quot;,
+          &quot;name&quot;: &quot;add&quot;,
+          &quot;input&quot;: {
+            &quot;a&quot;: 29,
+            &quot;b&quot;: 30
+          }
+        }
+      },
+      {
+        &quot;toolUse&quot;: {
+          &quot;toolUseId&quot;: &quot;tooluse_00d028b4e7664393930f7ef3&quot;,
+          &quot;name&quot;: &quot;add&quot;,
+          &quot;input&quot;: {
+            &quot;b&quot;: 1,
+            &quot;a&quot;: 30
+          }
+        }
+      },
+      {
+        &quot;toolUse&quot;: {
+          &quot;toolUseId&quot;: &quot;tooluse_04e5061ca1e54154b0ccbd17&quot;,
+          &quot;name&quot;: &quot;add&quot;,
+          &quot;input&quot;: {
+            &quot;a&quot;: 1,
+            &quot;b&quot;: 1
+          }
+        }
+      }
+    ]
+  },
+  {
+    &quot;role&quot;: &quot;user&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;toolResult&quot;: {
+          &quot;status&quot;: &quot;success&quot;,
+          &quot;toolUseId&quot;: &quot;tooluse_478c3139e2c2496fa4297fb0&quot;,
+          &quot;content&quot;: [
+            {
+              &quot;text&quot;: &quot;59.0&quot;
+            }
+          ],
+          &quot;structuredContent&quot;: {
+            &quot;result&quot;: 59.0
+          },
+          &quot;metadata&quot;: {
+            &quot;fastmcp&quot;: {
+              &quot;wrap_result&quot;: true
+            }
+          },
+          &quot;isError&quot;: false
+        }
+      },
+      {
+        &quot;toolResult&quot;: {
+          &quot;status&quot;: &quot;success&quot;,
+          &quot;toolUseId&quot;: &quot;tooluse_00d028b4e7664393930f7ef3&quot;,
+          &quot;content&quot;: [
+            {
+              &quot;text&quot;: &quot;31.0&quot;
+            }
+          ],
+          &quot;structuredContent&quot;: {
+            &quot;result&quot;: 31.0
+          },
+          &quot;metadata&quot;: {
+            &quot;fastmcp&quot;: {
+              &quot;wrap_result&quot;: true
+            }
+          },
+          &quot;isError&quot;: false
+        }
+      },
+      {
+        &quot;toolResult&quot;: {
+          &quot;status&quot;: &quot;success&quot;,
+          &quot;toolUseId&quot;: &quot;tooluse_04e5061ca1e54154b0ccbd17&quot;,
+          &quot;content&quot;: [
+            {
+              &quot;text&quot;: &quot;2.0&quot;
+            }
+          ],
+          &quot;structuredContent&quot;: {
+            &quot;result&quot;: 2.0
+          },
+          &quot;metadata&quot;: {
+            &quot;fastmcp&quot;: {
+              &quot;wrap_result&quot;: true
+            }
+          },
+          &quot;isError&quot;: false
+        }
+      }
+    ]
+  },
+  {
+    &quot;role&quot;: &quot;assistant&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;text&quot;: &quot;The results of the operations are:  \n- 29 + 30 = 59.0  \n- 31.0  \n\nFinal answer: 59.0 and 31.0.&quot;
+      }
+    ]
+  },
+  {
+    &quot;role&quot;: &quot;user&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;text&quot;: &quot;29 + 30 / 1&quot;
+      }
+    ]
+  }
+]</pre></section><section><h3>Model output</h3><pre>[
+  {
+    &quot;toolUse&quot;: {
+      &quot;toolUseId&quot;: &quot;tooluse_5ba8bce9140441958b6bdecb&quot;,
+      &quot;name&quot;: &quot;add&quot;,
+      &quot;input&quot;: {
+        &quot;b&quot;: 30,
+        &quot;a&quot;: 29
+      }
+    }
+  }
+]</pre></section></div></details><details class="model-call"><summary><span class="call-number">#6</span> <strong>math-operations-agent</strong> · not recorded · 1.976s · 578 input · 233 output · 811 total · end_turn</summary><div class="call-meta">Elapsed: 31.505s–33.481s · Projected input tokens: 1167</div><div class="io-grid"><section><h3>Input messages</h3><pre>[
+  {
+    &quot;role&quot;: &quot;user&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;text&quot;: &quot;29 + 30 / 1&quot;
+      }
+    ]
+  },
+  {
+    &quot;role&quot;: &quot;assistant&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;toolUse&quot;: {
+          &quot;toolUseId&quot;: &quot;tooluse_478c3139e2c2496fa4297fb0&quot;,
+          &quot;name&quot;: &quot;add&quot;,
+          &quot;input&quot;: {
+            &quot;a&quot;: 29,
+            &quot;b&quot;: 30
+          }
+        }
+      },
+      {
+        &quot;toolUse&quot;: {
+          &quot;toolUseId&quot;: &quot;tooluse_00d028b4e7664393930f7ef3&quot;,
+          &quot;name&quot;: &quot;add&quot;,
+          &quot;input&quot;: {
+            &quot;b&quot;: 1,
+            &quot;a&quot;: 30
+          }
+        }
+      },
+      {
+        &quot;toolUse&quot;: {
+          &quot;toolUseId&quot;: &quot;tooluse_04e5061ca1e54154b0ccbd17&quot;,
+          &quot;name&quot;: &quot;add&quot;,
+          &quot;input&quot;: {
+            &quot;a&quot;: 1,
+            &quot;b&quot;: 1
+          }
+        }
+      }
+    ]
+  },
+  {
+    &quot;role&quot;: &quot;user&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;toolResult&quot;: {
+          &quot;status&quot;: &quot;success&quot;,
+          &quot;toolUseId&quot;: &quot;tooluse_478c3139e2c2496fa4297fb0&quot;,
+          &quot;content&quot;: [
+            {
+              &quot;text&quot;: &quot;59.0&quot;
+            }
+          ],
+          &quot;structuredContent&quot;: {
+            &quot;result&quot;: 59.0
+          },
+          &quot;metadata&quot;: {
+            &quot;fastmcp&quot;: {
+              &quot;wrap_result&quot;: true
+            }
+          },
+          &quot;isError&quot;: false
+        }
+      },
+      {
+        &quot;toolResult&quot;: {
+          &quot;status&quot;: &quot;success&quot;,
+          &quot;toolUseId&quot;: &quot;tooluse_00d028b4e7664393930f7ef3&quot;,
+          &quot;content&quot;: [
+            {
+              &quot;text&quot;: &quot;31.0&quot;
+            }
+          ],
+          &quot;structuredContent&quot;: {
+            &quot;result&quot;: 31.0
+          },
+          &quot;metadata&quot;: {
+            &quot;fastmcp&quot;: {
+              &quot;wrap_result&quot;: true
+            }
+          },
+          &quot;isError&quot;: false
+        }
+      },
+      {
+        &quot;toolResult&quot;: {
+          &quot;status&quot;: &quot;success&quot;,
+          &quot;toolUseId&quot;: &quot;tooluse_04e5061ca1e54154b0ccbd17&quot;,
+          &quot;content&quot;: [
+            {
+              &quot;text&quot;: &quot;2.0&quot;
+            }
+          ],
+          &quot;structuredContent&quot;: {
+            &quot;result&quot;: 2.0
+          },
+          &quot;metadata&quot;: {
+            &quot;fastmcp&quot;: {
+              &quot;wrap_result&quot;: true
+            }
+          },
+          &quot;isError&quot;: false
+        }
+      }
+    ]
+  },
+  {
+    &quot;role&quot;: &quot;assistant&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;text&quot;: &quot;The results of the operations are:  \n- 29 + 30 = 59.0  \n- 31.0  \n\nFinal answer: 59.0 and 31.0.&quot;
+      }
+    ]
+  },
+  {
+    &quot;role&quot;: &quot;user&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;text&quot;: &quot;29 + 30 / 1&quot;
+      }
+    ]
+  },
+  {
+    &quot;role&quot;: &quot;assistant&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;toolUse&quot;: {
+          &quot;toolUseId&quot;: &quot;tooluse_5ba8bce9140441958b6bdecb&quot;,
+          &quot;name&quot;: &quot;add&quot;,
+          &quot;input&quot;: {
+            &quot;b&quot;: 30,
+            &quot;a&quot;: 29
+          }
+        }
+      }
+    ]
+  },
+  {
+    &quot;role&quot;: &quot;user&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;toolResult&quot;: {
+          &quot;status&quot;: &quot;success&quot;,
+          &quot;toolUseId&quot;: &quot;tooluse_5ba8bce9140441958b6bdecb&quot;,
+          &quot;content&quot;: [
+            {
+              &quot;text&quot;: &quot;59.0&quot;
+            }
+          ],
+          &quot;structuredContent&quot;: {
+            &quot;result&quot;: 59.0
+          },
+          &quot;metadata&quot;: {
+            &quot;fastmcp&quot;: {
+              &quot;wrap_result&quot;: true
+            }
+          },
+          &quot;isError&quot;: false
+        }
+      }
+    ]
+  }
+]</pre></section><section><h3>Model output</h3><pre>[
+  {
+    &quot;text&quot;: &quot;The result is 59.0.&quot;
+  }
+]</pre></section></div></details><details class="model-call"><summary><span class="call-number">#7</span> <strong>operations-supervisor</strong> · not recorded · 5.743s · 640 input · 394 output · 1,034 total · end_turn</summary><div class="call-meta">Elapsed: 33.484s–39.227s · Projected input tokens: 1327</div><div class="io-grid"><section><h3>Input messages</h3><pre>[
+  {
+    &quot;role&quot;: &quot;user&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;text&quot;: &quot;add 29 and 30&quot;
+      }
+    ]
+  },
+  {
+    &quot;role&quot;: &quot;assistant&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;toolUse&quot;: {
+          &quot;toolUseId&quot;: &quot;tooluse_be8cfd6996e648edbddc8af0&quot;,
+          &quot;name&quot;: &quot;math_operations_agent&quot;,
+          &quot;input&quot;: {
+            &quot;input&quot;: &quot;29 + 30 / 1&quot;
+          }
+        }
+      }
+    ]
+  },
+  {
+    &quot;role&quot;: &quot;user&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;toolResult&quot;: {
+          &quot;toolUseId&quot;: &quot;tooluse_be8cfd6996e648edbddc8af0&quot;,
+          &quot;status&quot;: &quot;success&quot;,
+          &quot;content&quot;: [
+            {
+              &quot;text&quot;: &quot;The results of the operations are:  \n- 29 + 30 = 59.0  \n- 31.0  \n\nFinal answer: 59.0 and 31.0.\n&quot;
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    &quot;role&quot;: &quot;assistant&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;toolUse&quot;: {
+          &quot;toolUseId&quot;: &quot;tooluse_26e5d984944046e2901ef51f&quot;,
+          &quot;name&quot;: &quot;math_operations_agent&quot;,
+          &quot;input&quot;: {
+            &quot;input&quot;: &quot;29 + 30 / 1&quot;
+          }
+        }
+      }
+    ]
+  },
+  {
+    &quot;role&quot;: &quot;user&quot;,
+    &quot;content&quot;: [
+      {
+        &quot;toolResult&quot;: {
+          &quot;toolUseId&quot;: &quot;tooluse_26e5d984944046e2901ef51f&quot;,
+          &quot;status&quot;: &quot;success&quot;,
+          &quot;content&quot;: [
+            {
+              &quot;text&quot;: &quot;The result is 59.0.\n&quot;
+            }
+          ]
+        }
+      }
+    ]
+  }
+]</pre></section><section><h3>Model output</h3><pre>[
+  {
+    &quot;text&quot;: &quot;The result of the expression $29 + \\frac{30}{1}$ is $59.0$. \n\nFinal Answer: $\\boxed{59}$&quot;
+  }
+]</pre></section></div></details></div>
+</body>
+</html>

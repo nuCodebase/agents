@@ -1,7 +1,7 @@
 import pytest
 from fastmcp import Client
 
-from math_server import mcp
+from mcp_servers.math_server import mcp
 
 
 @pytest.fixture

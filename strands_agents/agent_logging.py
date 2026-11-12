@@ -180,10 +180,19 @@ def attach_agent_logging(agent: Agent) -> None:
         """Record model input sizing and start model-call timing."""
         nonlocal model_started
         model_started = time.perf_counter()
+        model_config = getattr(event.agent.model, "config", {})
+        model_id = (
+            model_config.get("model_id", "unknown")
+            if isinstance(model_config, Mapping)
+            else "unknown"
+        )
         logger.info(
-            "MODEL_START | projected_input_tokens=%s | conversation_messages=%s",
+            "MODEL_START | model=%s | projected_input_tokens=%s | "
+            "conversation_messages=%s | input_messages=%s",
+            model_id,
             event.projected_input_tokens,
             len(event.agent.messages),
+            _json(event.agent.messages),
         )
 
     def after_model_call(event: AfterModelCallEvent) -> None:

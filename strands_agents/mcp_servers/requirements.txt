@@ -1,0 +1,2 @@
+fastmcp==3.4.7
+redis[hiredis]==5.2.1
