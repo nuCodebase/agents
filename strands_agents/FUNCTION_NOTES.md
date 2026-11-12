@@ -56,15 +56,8 @@ The default endpoint is `http://127.0.0.1:8001/mcp`.
 |---|---|---|
 | `ensure_ollama_ready(model_id)` | Check Ollama connectivity and model availability. | Uses configurable `OLLAMA_HOST`; exits with an actionable message when unavailable. |
 | `create_math_client()` | Build a Strands network MCP client. | Returns the configured math server client; callers own its lifecycle. |
-| `create_supervisor_agent(model, math_tools, geometry_tools)` | Build the three-agent hierarchy. | Gives each worker only its operation tools and gives the supervisor only the two worker wrappers. |
+| `create_supervisor_agent(supervisor_model, worker_model, math_tools, geometry_tools)` | Build the three-agent hierarchy. | Gives each worker only its operation tools and gives the supervisor only the two worker wrappers. |
 | `main()` | Run the command-line Strands experience. | Connects to MCP, loads both tool families, builds the supervisor, and sends it one prompt. |
-
-## `agent.py`
-
-| Function | Purpose | Important behavior |
-|---|---|---|
-| `ensure_ollama_ready(model)` | Async Ollama readiness check for LangChain. | Uses a three-second HTTP timeout. |
-| `main()` | Run the LangChain command-line agent. | Loads MCP tools and invokes the selected local Ollama model asynchronously. |
 
 ## `agent_logging.py`
 

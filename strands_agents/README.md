@@ -1,4 +1,4 @@
-# Math MCP server + LangChain agent
+# Math MCP server + Strands agents
 
 See [`FUNCTION_NOTES.md`](FUNCTION_NOTES.md) for a function-by-function
 developer reference covering the MCP server, agents, logging, Streamlit UI, and
@@ -18,12 +18,8 @@ tools from a Docker container. The agents access them over Streamable HTTP.
 6. The supervisor receives the workers as tools, delegates the identified tasks,
    and combines their responses. It cannot invoke operation tools directly.
 
-Both `agent.py` and `agents_strands.py` load the same configuration. The MCP URL
-defaults to `http://127.0.0.1:8001/mcp` and can be changed with
-`MATH_MCP_URL`.
-
-All server implementation and direct protocol testing use FastMCP. LangChain's
-official MCP adapter is the framework bridge that exposes MCP tools to its agent.
+`agents_strands.py` loads the MCP configuration. The MCP URL defaults to
+`http://127.0.0.1:8001/mcp` and can be changed with `MATH_MCP_URL`.
 
 ## Setup
 
@@ -41,25 +37,13 @@ Activation is optional. If you prefer it, run `source .venv/bin/activate` from
 this guide use `.venv/bin/python` explicitly so shell configuration cannot
 interfere.
 
-## Run without cloud credentials
+## Install local models
 
 Install [Ollama](https://ollama.com), start it, and download the default models:
 
 ```bash
 ollama pull qwen3:1.7b
 ollama pull qwen3:0.6b
-```
-
-Then run:
-
-```bash
-.venv/bin/python agent.py "What is 144 divided by 12, then raised to the third power?"
-```
-
-Choose another installed Ollama model with `--model`, for example:
-
-```bash
-.venv/bin/python agent.py --model llama3.1:8b "Multiply 25 by 16"
 ```
 
 ## Strands agent with Ollama

@@ -1,15 +1,12 @@
 [project]
 name = "langchain-math-mcp-example"
 version = "0.1.0"
-description = "A minimal FastMCP math server connected to a LangChain agent"
+description = "A FastMCP math server connected to hierarchical Strands agents"
 requires-python = ">=3.10"
 dependencies = [
     "fastmcp>=2,<4",
     "fastapi>=0.115,<1",
     "httpx>=0.28,<1",
-    "langchain>=1,<2",
-    "langchain-mcp-adapters>=0.2,<1",
-    "langchain-ollama>=1,<2",
     "redis[hiredis]>=5,<6",
     "strands-agents[ollama]>=1,<2",
     "streamlit>=1.40,<2",
@@ -20,7 +17,7 @@ dependencies = [
 dev = ["pytest>=8,<9"]
 
 [tool.setuptools]
-py-modules = ["agent", "agent_api", "agent_logging", "agents_strands", "plot_agent_timeline", "streamlit_app"]
+py-modules = ["agent_api", "agent_logging", "agents_strands", "plot_agent_timeline", "streamlit_app"]
 packages = ["mcp_servers"]
 
 [tool.pytest.ini_options]
